@@ -1,4 +1,4 @@
-# StyleHub E-Commerce
+# MiniShop E-Commerce platform
 
 A modern e-commerce web app I built using Next.js 16, TypeScript, and Tailwind CSS. This project showcases my approach to building scalable frontend applications with clean architecture, solid performance, and accessibility in mind.
 
