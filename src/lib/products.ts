@@ -1,13 +1,73 @@
 import { Product, ProductCategory } from '@/types';
 
-// Helper to generate consistent image URLs
-const getProductImage = (id: number, category: string): string[] => {
-  // Using picsum.photos for consistent, high-quality placeholder images
-  const baseId = id * 10;
+// Category-specific image collections from Unsplash
+const categoryImages: Record<string, string[]> = {
+  shoes: [
+    'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&h=800&fit=crop', // Red Nike
+    'https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=800&h=800&fit=crop', // White sneaker
+    'https://images.unsplash.com/photo-1600185365926-3a2ce3cdb9eb?w=800&h=800&fit=crop', // Nike pair
+    'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=800&h=800&fit=crop', // Colorful Nike
+    'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=800&h=800&fit=crop', // Jordan
+    'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=800&h=800&fit=crop', // White sneaker side
+    'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=800&h=800&fit=crop', // Vans style
+    'https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=800&h=800&fit=crop', // Colorful sneakers
+  ],
+  shirts: [
+    'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&h=800&fit=crop', // White shirt
+    'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800&h=800&fit=crop', // Dress shirts
+    'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=800&h=800&fit=crop', // Black tee
+    'https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=800&h=800&fit=crop', // White tee
+    'https://images.unsplash.com/photo-1564859228273-274232fdb516?w=800&h=800&fit=crop', // Polo shirts
+    'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800&h=800&fit=crop', // Casual shirt
+    'https://images.unsplash.com/photo-1603252109303-2751441dd157?w=800&h=800&fit=crop', // Flannel
+    'https://images.unsplash.com/photo-1586363104862-3a5e2ab60d99?w=800&h=800&fit=crop', // Henley
+  ],
+  electronics: [
+    'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&h=800&fit=crop', // Headphones
+    'https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?w=800&h=800&fit=crop', // AirPods
+    'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=800&h=800&fit=crop', // Smart watch
+    'https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=800&h=800&fit=crop', // Power bank
+    'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=800&h=800&fit=crop', // Headphones white
+    'https://images.unsplash.com/photo-1610438235354-a6ae5528385c?w=800&h=800&fit=crop', // Earbuds
+    'https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=800&h=800&fit=crop', // Apple watch
+    'https://images.unsplash.com/photo-1625723044792-44de16ccb4e9?w=800&h=800&fit=crop', // Charger
+  ],
+  accessories: [
+    'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=800&h=800&fit=crop', // Sunglasses
+    'https://images.unsplash.com/photo-1627123424574-724758594e93?w=800&h=800&fit=crop', // Wallet
+    'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&h=800&fit=crop', // Bag
+    'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=800&h=800&fit=crop', // Watch
+    'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=800&h=800&fit=crop', // Aviator glasses
+    'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=800&h=800&fit=crop', // Backpack
+    'https://images.unsplash.com/photo-1622434641406-a158123450f9?w=800&h=800&fit=crop', // Luxury watch
+    'https://images.unsplash.com/photo-1606522754091-a3bbf9ad4cb3?w=800&h=800&fit=crop', // Belt
+  ],
+  pants: [
+    'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=800&h=800&fit=crop', // Jeans
+    'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800&h=800&fit=crop', // Blue jeans
+    'https://images.unsplash.com/photo-1542272604-787c3835535d?w=800&h=800&fit=crop', // Denim
+    'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=800&h=800&fit=crop', // Chinos
+    'https://images.unsplash.com/photo-1584370848010-d7fe6bc767ec?w=800&h=800&fit=crop', // Joggers
+    'https://images.unsplash.com/photo-1604176354204-9268737828e4?w=800&h=800&fit=crop', // Trousers
+  ],
+  outerwear: [
+    'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=800&h=800&fit=crop', // Puffer jacket
+    'https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=800&h=800&fit=crop', // Coat
+    'https://images.unsplash.com/photo-1544923246-77307dd628b8?w=800&h=800&fit=crop', // Rain jacket
+    'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&h=800&fit=crop', // Jacket
+    'https://images.unsplash.com/photo-1559551409-dadc959f76b8?w=800&h=800&fit=crop', // Bomber
+    'https://images.unsplash.com/photo-1520012218364-3dbe62c99bee?w=800&h=800&fit=crop', // Denim jacket
+  ],
+};
+
+// Get product images based on category and index
+const getProductImage = (productIndex: number, category: string): string[] => {
+  const images = categoryImages[category] || categoryImages.accessories;
+  const startIndex = (productIndex * 3) % images.length;
   return [
-    `https://picsum.photos/seed/${category}${baseId}/800/800`,
-    `https://picsum.photos/seed/${category}${baseId + 1}/800/800`,
-    `https://picsum.photos/seed/${category}${baseId + 2}/800/800`,
+    images[startIndex % images.length],
+    images[(startIndex + 1) % images.length],
+    images[(startIndex + 2) % images.length],
   ];
 };
 
