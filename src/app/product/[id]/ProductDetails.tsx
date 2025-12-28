@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, Heart, Share2, Star, Truck, ShieldCheck, RefreshCw, Minus, Plus } from 'lucide-react';
@@ -19,10 +19,19 @@ export function ProductDetails({ product, relatedProducts }: ProductDetailsProps
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const addItem = useCartStore(state => state.addItem);
   const isInCart = useCartStore(state => state.isInCart(product.id));
   const getItemQuantity = useCartStore(state => state.getItemQuantity(product.id));
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Use mounted check to avoid hydration mismatch
+  const showInCart = mounted && isInCart;
+  const cartQuantity = mounted ? getItemQuantity : 0;
 
   const discountPercentage = product.originalPrice
     ? getDiscountPercentage(product.originalPrice, product.price)
@@ -239,9 +248,9 @@ export function ProductDetails({ product, relatedProducts }: ProductDetailsProps
                     <Plus className="w-4 h-4" />
                   </button>
                 </div>
-                {isInCart && (
+                {showInCart && (
                   <span className="text-sm text-surface-500">
-                    ({getItemQuantity} in cart)
+                    ({cartQuantity} in cart)
                   </span>
                 )}
               </div>

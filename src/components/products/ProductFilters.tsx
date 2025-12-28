@@ -1,13 +1,26 @@
 'use client';
 
+import dynamic from 'next/dynamic';
+
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
-import { ProductFilters as FilterTypes, PRODUCT_CATEGORIES, PRICE_RANGES, SORT_OPTIONS } from '@/types';
+import {
+  ProductFilters as FilterTypes,
+  PRODUCT_CATEGORIES,
+  PRICE_RANGES,
+  SORT_OPTIONS,
+} from '@/types';
 import { useDebounce } from '@/hooks';
 import { cn, buildUrlWithParams } from '@/utils';
-import { Input, Select, Button } from '@/components/ui';
 
+const Input = dynamic(() => import('@/components/ui').then((mod) => mod.Input),{ssr: false});
+const Select = dynamic(() =>
+  import('@/components/ui').then((mod) => mod.Select),{ssr: false}
+);
+const Button = dynamic(() =>
+  import('@/components/ui').then((mod) => mod.Button),{ssr: false}
+);
 interface ProductFiltersProps {
   onFiltersChange?: (filters: FilterTypes) => void;
 }
@@ -15,21 +28,31 @@ interface ProductFiltersProps {
 export function ProductFilters({ onFiltersChange }: ProductFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
-  // Local state for controlled inputs
-  const [searchInput, setSearchInput] = useState(searchParams.get('search') ?? '');
+
+  // Initialize empty to avoid hydration mismatch, sync after mount
+  const [searchInput, setSearchInput] = useState('');
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-  
+  const [mounted, setMounted] = useState(false);
+
   // Debounce search input (300ms delay)
   const debouncedSearch = useDebounce(searchInput, 300);
 
   // Get current filter values from URL
   const currentFilters: FilterTypes = {
-    category: (searchParams.get('category') as FilterTypes['category']) ?? 'all',
-    priceRange: (searchParams.get('priceRange') as FilterTypes['priceRange']) ?? 'all',
+    category:
+      (searchParams.get('category') as FilterTypes['category']) ?? 'all',
+    priceRange:
+      (searchParams.get('priceRange') as FilterTypes['priceRange']) ?? 'all',
     search: searchParams.get('search') ?? '',
     sortBy: (searchParams.get('sortBy') as FilterTypes['sortBy']) ?? 'featured',
   };
+
+  // Sync search input with URL after mount to avoid hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+    const urlSearch = searchParams.get('search') ?? '';
+    setSearchInput(urlSearch);
+  }, [searchParams]);
 
   // Update URL with new filters
   const updateFilters = useCallback(
@@ -41,19 +64,19 @@ export function ProductFilters({ onFiltersChange }: ProductFiltersProps) {
         search: updatedFilters.search,
         sortBy: updatedFilters.sortBy,
       });
-      
+
       router.push(url, { scroll: false });
       onFiltersChange?.(updatedFilters);
     },
     [currentFilters, router, onFiltersChange]
   );
 
-  // Update search when debounced value changes
+  // Update search when debounced value changes (only after mounted)
   useEffect(() => {
-    if (debouncedSearch !== currentFilters.search) {
+    if (mounted && debouncedSearch !== currentFilters.search) {
       updateFilters({ search: debouncedSearch });
     }
-  }, [debouncedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, mounted]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Clear all filters
   const clearFilters = () => {
@@ -85,7 +108,7 @@ export function ProductFilters({ onFiltersChange }: ProductFiltersProps) {
             type="search"
             placeholder="Search products..."
             value={searchInput}
-            onChange={e => setSearchInput(e.target.value)}
+            onChange={(e) => setSearchInput(e.target.value)}
             leftIcon={<Search className="w-5 h-5" />}
             rightIcon={
               searchInput ? (
@@ -122,9 +145,14 @@ export function ProductFilters({ onFiltersChange }: ProductFiltersProps) {
         {/* Sort (Always Visible) */}
         <div className="hidden sm:block w-48">
           <Select
-            options={SORT_OPTIONS.map(opt => ({ value: opt.value, label: opt.label }))}
+            options={SORT_OPTIONS.map((opt) => ({
+              value: opt.value,
+              label: opt.label,
+            }))}
             value={currentFilters.sortBy}
-            onChange={e => updateFilters({ sortBy: e.target.value as FilterTypes['sortBy'] })}
+            onChange={(e) =>
+              updateFilters({ sortBy: e.target.value as FilterTypes['sortBy'] })
+            }
             aria-label="Sort products"
           />
         </div>
@@ -145,27 +173,46 @@ export function ProductFilters({ onFiltersChange }: ProductFiltersProps) {
           label="Category"
           options={[
             { value: 'all', label: 'All Categories' },
-            ...PRODUCT_CATEGORIES.map(cat => ({ value: cat.value, label: cat.label })),
+            ...PRODUCT_CATEGORIES.map((cat) => ({
+              value: cat.value,
+              label: cat.label,
+            })),
           ]}
           value={currentFilters.category ?? 'all'}
-          onChange={e => updateFilters({ category: e.target.value as FilterTypes['category'] })}
+          onChange={(e) =>
+            updateFilters({
+              category: e.target.value as FilterTypes['category'],
+            })
+          }
         />
 
         {/* Price Range Filter */}
         <Select
           label="Price Range"
-          options={PRICE_RANGES.map(range => ({ value: range.value, label: range.label }))}
+          options={PRICE_RANGES.map((range) => ({
+            value: range.value,
+            label: range.label,
+          }))}
           value={currentFilters.priceRange ?? 'all'}
-          onChange={e => updateFilters({ priceRange: e.target.value as FilterTypes['priceRange'] })}
+          onChange={(e) =>
+            updateFilters({
+              priceRange: e.target.value as FilterTypes['priceRange'],
+            })
+          }
         />
 
         {/* Sort (Mobile only) */}
         <div className="sm:hidden">
           <Select
             label="Sort By"
-            options={SORT_OPTIONS.map(opt => ({ value: opt.value, label: opt.label }))}
+            options={SORT_OPTIONS.map((opt) => ({
+              value: opt.value,
+              label: opt.label,
+            }))}
             value={currentFilters.sortBy}
-            onChange={e => updateFilters({ sortBy: e.target.value as FilterTypes['sortBy'] })}
+            onChange={(e) =>
+              updateFilters({ sortBy: e.target.value as FilterTypes['sortBy'] })
+            }
           />
         </div>
 
@@ -189,13 +236,20 @@ export function ProductFilters({ onFiltersChange }: ProductFiltersProps) {
         <div className="flex flex-wrap gap-2">
           {currentFilters.category && currentFilters.category !== 'all' && (
             <FilterTag
-              label={PRODUCT_CATEGORIES.find(c => c.value === currentFilters.category)?.label ?? ''}
+              label={
+                PRODUCT_CATEGORIES.find(
+                  (c) => c.value === currentFilters.category
+                )?.label ?? ''
+              }
               onRemove={() => updateFilters({ category: 'all' })}
             />
           )}
           {currentFilters.priceRange && currentFilters.priceRange !== 'all' && (
             <FilterTag
-              label={PRICE_RANGES.find(p => p.value === currentFilters.priceRange)?.label ?? ''}
+              label={
+                PRICE_RANGES.find((p) => p.value === currentFilters.priceRange)
+                  ?.label ?? ''
+              }
               onRemove={() => updateFilters({ priceRange: 'all' })}
             />
           )}
@@ -215,7 +269,13 @@ export function ProductFilters({ onFiltersChange }: ProductFiltersProps) {
 }
 
 // Filter tag component
-function FilterTag({ label, onRemove }: { label: string; onRemove: () => void }) {
+function FilterTag({
+  label,
+  onRemove,
+}: {
+  label: string;
+  onRemove: () => void;
+}) {
   return (
     <span className="inline-flex items-center gap-1 px-3 py-1 bg-brand-100 text-brand-800 rounded-full text-sm">
       {label}

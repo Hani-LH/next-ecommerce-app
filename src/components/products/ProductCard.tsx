@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Heart, ShoppingCart, Star } from 'lucide-react';
@@ -17,8 +17,13 @@ interface ProductCardProps {
 export function ProductCard({ product, priority = false }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const addItem = useCartStore(state => state.addItem);
   const isInCart = useCartStore(state => state.isInCart(product.id));
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const discountPercentage = product.originalPrice
     ? getDiscountPercentage(product.originalPrice, product.price)
@@ -29,6 +34,9 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
     e.stopPropagation();
     addItem(product);
   };
+
+  // Use mounted check to avoid hydration mismatch
+  const showInCart = mounted && isInCart;
 
   return (
     <article
@@ -105,14 +113,14 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
             )}
           >
             <Button
-              variant={isInCart ? 'secondary' : 'primary'}
+              variant={showInCart ? 'secondary' : 'primary'}
               fullWidth
               onClick={handleAddToCart}
               disabled={!product.inStock}
               className="shadow-lg"
             >
               <ShoppingCart className="w-4 h-4" />
-              {isInCart ? 'In Cart' : 'Add to Cart'}
+              {showInCart ? 'In Cart' : 'Add to Cart'}
             </Button>
           </div>
         </div>
